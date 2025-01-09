@@ -1,4 +1,4 @@
-package com.eazybytes.loans.entity;
+package com.eazybytes.cards.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
@@ -14,12 +14,11 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
-@EntityListeners(AuditingEntityListener.class)
 @MappedSuperclass
-@Getter
-@Setter
-@ToString
+@EntityListeners(AuditingEntityListener.class)
+@Getter @Setter @ToString
 public class BaseEntity {
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
@@ -35,4 +34,5 @@ public class BaseEntity {
     @LastModifiedBy
     @Column(insertable = false)
     private String updatedBy;
+
 }
