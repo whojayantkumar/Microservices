@@ -9,6 +9,7 @@ import com.eazybytes.accounts.exception.CustomerAlreadyExistsException;
 import com.eazybytes.accounts.exception.ResourceNotFoundException;
 import com.eazybytes.accounts.mapper.AccountsMapper;
 import com.eazybytes.accounts.mapper.CustomerMapper;
+import com.eazybytes.accounts.rabbitmq.RabbitMqProducer;
 import com.eazybytes.accounts.repository.AccountsRepository;
 import com.eazybytes.accounts.repository.CustomerRepository;
 import com.eazybytes.accounts.service.IAccountsService;
@@ -25,6 +26,7 @@ public class AccountsServiceImpl implements IAccountsService {
 
     private AccountsRepository accountsRepository;
     private CustomerRepository customerRepository;
+    private RabbitMqProducer rabbitMqProducer;
 
     /***
      *
@@ -33,11 +35,15 @@ public class AccountsServiceImpl implements IAccountsService {
     @Override
     public void createAccount(CustomerDto customerDto) {
         Customer customer = CustomerMapper.mapToCustomer(customerDto, new Customer());
+        CustomerDto finalCustomerDto = customerDto;
         customerRepository.findByMobileNumber(customerDto.getMobileNumber()).ifPresent(c -> {
-            throw new CustomerAlreadyExistsException("Customer already registered with mobile number: " + customerDto.getMobileNumber());
+            throw new CustomerAlreadyExistsException("Customer already registered with mobile number: " + finalCustomerDto.getMobileNumber());
         });
         customer = customerRepository.save(customer);
-        accountsRepository.save(createNewAccount(customer));
+        Accounts accounts = accountsRepository.save(createNewAccount(customer));
+        customerDto = CustomerMapper.mapToCustomerDto(customer, customerDto);
+        customerDto.setAccounts(AccountsMapper.mapToAccountsDto(accounts, new AccountsDto()));
+        rabbitMqProducer.sendMessage(customerDto);
     }
 
     /***
